@@ -65,7 +65,8 @@ def inverse_fourier_transform_1d(func, v):
 def fourier_transform_2d_continuous(func, x, y):
     """
     Calculate the 2D Fourier transform of a given function over a grid defined by x and y,
-    approximating the continuous Fourier transform defined with integrals over infinite bounds.
+    approximating the continuous Fourier transform defined with integrals over infinite bounds,
+    and applying a Hanning window to reduce edge effects.
 
     Parameters:
     - func: A callable function that takes two arrays (x, y) and returns a 2D array.
@@ -87,8 +88,16 @@ def fourier_transform_2d_continuous(func, x, y):
     # Evaluate the function on the 2D grid
     f = func(X, Y)
 
-    # Calculate the 2D FFT
-    g = fft2(f)
+    # Create Hanning windows for both dimensions
+    hanning_x = np.hanning(len(x))
+    hanning_y = np.hanning(len(y))
+    hanning_2d = np.outer(hanning_x, hanning_y)  # Create the 2D Hanning window
+
+    # Apply the 2D Hanning window to the function
+    f_windowed = f * hanning_2d
+
+    # Calculate the 2D FFT of the windowed function
+    g = fft2(f_windowed)
 
     # Continuous frequency normalization factors (in cycles per unit distance)
     vx = fftfreq(f.shape[0], dx)  # Frequencies in cycles per unit distance
@@ -103,7 +112,6 @@ def fourier_transform_2d_continuous(func, x, y):
     g = fftshift(g) * dx * dy * np.exp(-1j * 2 * np.pi * (VX * x0 + VY * y0))
 
     return VX, VY, g
-
 
 
 def inverse_fourier_transform_2d(func, vx, vy):

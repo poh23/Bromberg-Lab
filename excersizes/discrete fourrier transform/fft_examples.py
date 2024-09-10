@@ -88,7 +88,7 @@ def analytical_fourier_transform_rect(VX, VY, width, height):
     - F: 2D array of the analytical Fourier transform values.
     """
     # Compute the analytical solution of the 2D Fourier Transform of a rectangle
-    sinc_x = np.sinc(width * VX)
+    sinc_x = 0.5 * np.sinc(width * (VX-1)) + 0.5 * np.sinc(width * (VX+1))
     sinc_y = np.sinc(height * VY)
     F = width * height * sinc_x * sinc_y  # Adjusted based on the new definition
 
@@ -166,31 +166,30 @@ def fft2_of_rect_continuous():
     y = np.linspace(-5, 5, 256)
 
     # Define the rectangular function correctly using X and Y grids
-    func = lambda X, Y: np.where((np.abs(X) <= width / 2) & (np.abs(Y) <= height / 2), 1, 0)
+    func = lambda X, Y: np.where((np.abs(X) <= width / 2) & (np.abs(Y) <= height / 2), 1, 0) * np.cos(2*np.pi*X)
 
     # Plot the Fourier transform, analytical solution, and reconstruction
     plot_comparison(func, x, y, width, height)
 
 # Call the function to execute
-ft_of_gaussian()
+#fft2_of_rect_continuous()
 
-def ft_and_ifft_of_2d_gaussian(square_width=100, num_samples=1000, sigma=0.5):
+def ft_of_2d_gaussian(square_width=10, num_samples=500, sigma=0.6):
+    # The more sigma is smaller than the square width, the difference between the intensities is smaller
     # Generate Gaussian Aperture
     x = np.linspace(-square_width / 2, square_width / 2, num_samples, endpoint=False)
-    func = lambda X, Y: np.exp(-(X ** 2 + Y ** 2) / sigma ** 2)
-    X1, Y1 = np.meshgrid(x,x)
+    func = lambda X, Y: np.exp(-(X ** 2 + Y ** 2) / sigma ** 2) * np.cos(20 * np.pi * X) * np.cos(4 * np.pi * Y)
 
-    VX, VY, F = fft_funcs.fourier_transform_2d_continuous(func, x, x)
-
-    # X, Y, G = fft_funcs.inverse_fourier_transform_2d(F, VX[:, 0], VY[0, :])
+    # Compute the numerical Fourier transform
+    VX, VY, FFT = fft_funcs.fourier_transform_2d_continuous(func, x, x)
 
     # Create a single figure for all subplots
-    plt.figure(figsize=(18, 6))
+    plt.figure(figsize=(12, 12))
 
     # Subplot 1: Gaussian Aperture
-    plt.subplot(1, 3, 1)
+    plt.subplot(2, 2, 1)
     X1, Y1 = np.meshgrid(x, x, indexing='ij')
-    F = func(X1, Y1)**2
+    F = func(X1, Y1) ** 2
     plt.imshow(F, extent=[X1.min(), X1.max(), Y1.min(), Y1.max()],
                origin='lower', cmap='gray')
     plt.colorbar(label='Intensity')
@@ -198,27 +197,95 @@ def ft_and_ifft_of_2d_gaussian(square_width=100, num_samples=1000, sigma=0.5):
     plt.ylabel('Y')
     plt.title('Gaussian Aperture')
 
-
-    numerical_intensity = np.real(F) ** 2
-    plt.subplot(1, 3, 2)
+    # Subplot 2: Numerical Fourier Transform
+    numerical_intensity = np.real(FFT) ** 2
+    plt.subplot(2, 2, 2)
     plt.imshow(numerical_intensity, extent=[VX.min(), VX.max(), VY.min(), VY.max()],
                origin='lower', cmap='gray')
     plt.colorbar(label='Intensity')
     plt.xlabel('VX')
     plt.ylabel('VY')
-    plt.title(f'Numerical Fourier Transform in 2D')
+    plt.title('Numerical Fourier Transform in 2D')
 
-    # Calculate the analytical Fourier transform of the Gaussian
-    G = sigma**2 * np.pi * np.exp(-np.pi**2 * sigma**2 *(VX**2 + VY**2))
-    plt.subplot(1, 3, 3)
-    plt.imshow(np.real(G)**2, extent=[VX.min(), VX.max(), VY.min(), VY.max()],
+    # Subplot 3: Analytical Fourier Transform
+    G = 0.25 * (sigma**2 * np.pi * np.exp(-np.pi**2 * sigma**2 * ((VX-10)**2 + (VY-2)**2)) +
+                sigma**2 * np.pi * np.exp(-np.pi**2 * sigma**2 * ((VX+10)**2 + (VY-2)**2)) +
+                sigma**2 * np.pi * np.exp(-np.pi**2 * sigma**2 * ((VX-10)**2 + (VY+2)**2)) +
+                sigma**2 * np.pi * np.exp(-np.pi**2 * sigma**2 * ((VX+10)**2 + (VY+2)**2)))
+    plt.subplot(2, 2, 3)
+    plt.imshow(np.real(G) ** 2, extent=[VX.min(), VX.max(), VY.min(), VY.max()],
                origin='lower', cmap='gray')
     plt.colorbar(label='Intensity')
     plt.xlabel('VX')
     plt.ylabel('VY')
-    plt.title(f'Analytic Fourier Transform in 2D')
+    plt.title('Analytic Fourier Transform in 2D')
+
+    # Subplot 4: Difference between Numerical and Analytical
+    difference = np.abs(numerical_intensity - np.real(G) ** 2)
+    plt.subplot(2, 2, 4)
+    plt.imshow(difference, extent=[VX.min(), VX.max(), VY.min(), VY.max()],
+               origin='lower', cmap='hot')
+    plt.colorbar(label='Difference Intensity')
+    plt.xlabel('VX')
+    plt.ylabel('VY')
+    plt.title('Difference: Numerical vs. Analytical')
 
     # Show all subplots in one figure
+    plt.tight_layout()
     plt.show()
 
-ft_and_ifft_of_2d_gaussian()
+# Call the function
+# ft_of_2d_gaussian()
+
+def ft_and_ift_2d_gaussian(square_width=10, num_samples=1000, sigma=1):
+    # The more sigma is smaller than the square width, the difference between the intensities is smaller
+    # Generate Gaussian Aperture
+    x = np.linspace(-square_width / 2, square_width / 2, num_samples, endpoint=False)
+    func = lambda X, Y: np.exp(-(X ** 2 + Y ** 2) / sigma ** 2) * np.cos(4 * np.pi * X) * np.cos(2 * np.pi * Y)
+
+    # Compute the numerical Fourier transform
+    VX, VY, FFT = fft_funcs.fourier_transform_2d_continuous(func, x, x)
+
+    # Compute the numerical inverse Fourier transform
+    IX, IY, IFFT = fft_funcs.inverse_fourier_transform_2d(FFT, VX[:, 0], VY[0, :])
+
+    # Create a single figure for all subplots
+    plt.figure(figsize=(12, 12))
+
+    # Subplot 1: Gaussian Aperture
+    plt.subplot(1, 3, 1)
+    X1, Y1 = np.meshgrid(x, x, indexing='ij')
+    F = func(X1, Y1) ** 2
+    plt.imshow(F, extent=[X1.min(), X1.max(), Y1.min(), Y1.max()],
+               origin='lower', cmap='gray')
+    plt.colorbar(label='Intensity')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Gaussian Aperture')
+
+    # Subplot 2: Numerical Inverse Fourier Transform on Fourier transform
+    numerical_intensity = np.real(IFFT) ** 2
+    plt.subplot(1, 3, 2)
+    plt.imshow(numerical_intensity, extent=[IX.min(), IX.max(), IY.min(), IY.max()],
+               origin='lower', cmap='gray')
+    plt.colorbar(label='Intensity')
+    plt.xlabel('VX')
+    plt.ylabel('VY')
+    plt.title('Numerical Inverse Fourier Transform in 2D')
+
+    # Subplot 4: Difference between Numerical and Analytical
+    difference = np.abs(numerical_intensity - F)
+    plt.subplot(1, 3, 3)
+    plt.imshow(difference, extent=[X1.min(), X1.max(), Y1.min(), Y1.max()],
+               origin='lower', cmap='hot')
+    plt.colorbar(label='Difference Intensity')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Difference: Original vs. Numerical IFT of FT')
+
+    # Show all subplots in one figure
+    plt.tight_layout()
+    plt.show()
+
+# Call the function
+ft_and_ift_2d_gaussian()
