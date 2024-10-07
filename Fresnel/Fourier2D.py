@@ -4,8 +4,8 @@ from scipy.fftpack import fft2, fftshift, fftfreq, ifft2
 
 
 # Define 2D Gaussian
-def gaussian_2d(x, y, a=1, b=0, c=1):
-    gaussian = a * np.exp(-((x - b) ** 2 + (y - b) ** 2) / (2 * c ** 2))
+def gaussian_2d(x, y, a=1, b_x=0, b_y=0, c=1):
+    gaussian = a * np.exp(-((x - b_x) ** 2 + (y - b_y) ** 2) / (2 * c ** 2))
     return gaussian
 
 
@@ -35,11 +35,18 @@ def analytical_ft_gaussian_with_cosine_2d(k_x, k_y, a=1, b=0, c=1, d_x=1, d_y=1)
 
 
 # Perform numerical 2D Fourier Transform
-def numerical_ft_2d(f):
+def numerical_ft_2d(f, x, y):
+
+    k_x = fftfreq(len(x), x[1] - x[0])
+    k_y = fftfreq(len(y), y[1] - y[0])
+    k_x, k_y = np.meshgrid(k_x, k_y)
+    k_x = fftshift(k_x) * (2 * np.pi)
+    k_y = fftshift(k_y) * (2 * np.pi)
+
     f_hat = fft2(f)
     f_hat = fftshift(f_hat)  # Shift zero frequency to the center
     f_hat /= f.shape[0] * f.shape[1]  # Normalize by the number of samples in both dimensions
-    return f_hat
+    return f_hat, k_x, k_y
 
 
 # Perform numerical 2D Inverse Fourier Transform
@@ -120,6 +127,8 @@ def plot_expressions_2d(x, y, f, f_reconstructed, k_x, k_y, f_analytical, f_nume
 
 def main():
     gaussian_amplitude = 1
+    b_x = 0
+    b_y = 0
     gaussian_mean = 0
     gaussian_std = 0.6
     cos_freq_x = 10
@@ -129,7 +138,7 @@ def main():
     y = np.linspace(-100, 100, 5000)
     X, Y = np.meshgrid(x, y)
 
-    f_original = gaussian_2d(X, Y, gaussian_amplitude, gaussian_mean * (2 * np.pi), gaussian_std * (2 * np.pi))
+    f_original = gaussian_2d(X, Y, gaussian_amplitude, b_x * (2 * np.pi), b_y * (2 * np.pi), gaussian_std * (2 * np.pi))
     envelope_cos = envelope_function_2d(X, Y, cos_freq_x, cos_freq_y)
     f = f_original * envelope_cos  # Apply the 2D envelope function
 
