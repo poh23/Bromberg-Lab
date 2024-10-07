@@ -21,14 +21,13 @@ def fourier_transform_1d(func, x):
     f = func(x)
 
     # Perform FFT
-    G = fft(f)
+    G = fftshift(fft(fftshift(f)))
 
     # Frequency components as per the continuous definition
-    k = fftfreq(f.size, dx)  # frequencies in cycles per unit length
-    nu = fftshift(k)  # shift to center zero frequency
+    nu = fftshift(fftfreq(f.size, dx))  # frequencies in cycles per unit length
 
     # Multiply by external factor for normalization and phase correction
-    G = fftshift(G) * dx * np.exp(-1j * 2 * np.pi * nu * x0)  # apply continuous correction
+    G *= dx
 
     return nu, G
 def inverse_fourier_transform_1d(func, v):
@@ -62,7 +61,7 @@ def inverse_fourier_transform_1d(func, v):
 
 ## 2D fourrier transforms
 
-def fourier_transform_2d_continuous(func, x, y):
+def fourier_transform_2d_continuous(func, x, y, window=False):
     """
     Calculate the 2D Fourier transform of a given function over a grid defined by x and y,
     approximating the continuous Fourier transform defined with integrals over infinite bounds,
@@ -83,21 +82,22 @@ def fourier_transform_2d_continuous(func, x, y):
     y0, dy = y[0], y[1] - y[0]
 
     # Generate a 2D grid of x and y coordinates
-    X, Y = np.meshgrid(x, y, indexing='ij')
+    X, Y = np.meshgrid(x, y)
 
     # Evaluate the function on the 2D grid
     f = func(X, Y)
 
-    # Create Hanning windows for both dimensions
-    hanning_x = np.hanning(len(x))
-    hanning_y = np.hanning(len(y))
-    hanning_2d = np.outer(hanning_x, hanning_y)  # Create the 2D Hanning window
+    if window:
+        # Create Hanning windows for both dimensions
+        hanning_x = np.hanning(len(x))
+        hanning_y = np.hanning(len(y))
+        hanning_2d = np.outer(hanning_x, hanning_y)  # Create the 2D Hanning window
 
-    # Apply the 2D Hanning window to the function
-    f_windowed = f * hanning_2d
+        # Apply the 2D Hanning window to the function
+        f = f * hanning_2d
 
     # Calculate the 2D FFT of the windowed function
-    g = fft2(f_windowed)
+    g = fft2(fftshift(f))
 
     # Continuous frequency normalization factors (in cycles per unit distance)
     vx = fftfreq(f.shape[0], dx)  # Frequencies in cycles per unit distance
@@ -106,10 +106,9 @@ def fourier_transform_2d_continuous(func, x, y):
     # Scale frequencies to match the continuous Fourier transform definition
     vx = fftshift(vx)
     vy = fftshift(vy)
-    VX, VY = np.meshgrid(vx, vy, indexing='ij')
+    VX, VY = np.meshgrid(vx, vy)
 
-    # Normalize and phase correction to match the analytical continuous definition
-    g = fftshift(g) * dx * dy * np.exp(-1j * 2 * np.pi * (VX * x0 + VY * y0))
+    g = fftshift(g) * dx * dy
 
     return VX, VY, g
 
@@ -147,3 +146,7 @@ def inverse_fourier_transform_2d(func, vx, vy):
 
     return x, y, f_reconstructed
 
+def closest(lst, val):
+    lst = np.asarray(lst)
+    idx = (np.abs(lst - val)).argmin()
+    return idx
