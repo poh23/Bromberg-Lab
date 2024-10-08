@@ -51,7 +51,7 @@ def inverse_fourier_transform_1d(func, v):
     f_reconstructed = ifft(func_unshifted) * len(v) * dv
 
     # Generate spatial coordinates x corresponding to frequencies
-    x = np.linspace(-0.5 / dv, 0.5 / dv, len(v), endpoint=False)
+    x = np.linspace(-0.5 / dv, 0.5 / dv, len(v))
 
     # Center the zero frequency component
     f_reconstructed = fftshift(f_reconstructed)
@@ -137,8 +137,8 @@ def inverse_fourier_transform_2d(func, vx, vy):
     f_reconstructed = ifft2(func_unshifted) * len(vx) * len(vy) * dvx * dvy
 
     # Generate spatial coordinates x and y
-    x = np.linspace(-0.5 / dvx, 0.5 / dvx, len(vx), endpoint=False)
-    y = np.linspace(-0.5 / dvy, 0.5 / dvy, len(vy), endpoint=False)
+    x = np.linspace(-0.5 / dvx, 0.5 / dvx, len(vx))
+    y = np.linspace(-0.5 / dvy, 0.5 / dvy, len(vy))
     x, y = np.meshgrid(x, y)
 
     # Center the zero frequency component

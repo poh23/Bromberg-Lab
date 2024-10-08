@@ -191,7 +191,7 @@ def find_sigma(x, y):
     sigma = x[y_closest_idx]
     return sigma
 
-# fresnel_approx_of_gaussian()
+fresnel_approx_of_gaussian()
 
 
 def propagation_of_rect(square_width=15, num_samples=1000, rect_width = 1):
@@ -295,4 +295,4 @@ def propagate_circ(square_width=3e-3, num_samples=1024, radius = 50e-6):
     plt.tight_layout()
     plt.show()
 
-propagate_circ()
+# propagate_circ()
