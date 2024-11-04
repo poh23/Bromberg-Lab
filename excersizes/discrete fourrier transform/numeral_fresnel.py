@@ -6,10 +6,38 @@ import matplotlib
 
 matplotlib.use('TkAgg')
 
-# todo: check perseval on various edge cases
-# todo: compare normalized slices of numerical output, analytical output and input` qa
 
-def fresnel_approximation(func, x, y, d, lamda=1, H0=1):
+def fresnel_approximation_1d(func, x, d, lamda=1, H0=1):
+    """
+    Perform a Fresnel approximation for 1D propagation of a wavefront.
+
+    Parameters:
+    - func: A callable function of x.
+    - x: 1D array of spatial coordinates.
+    - d: Propagation distance.
+    - lamda: Wavelength of the light.
+    - H0: Initial amplitude factor.
+
+    Returns:
+    - X: 1D array of spatial coordinates.
+    - G: 1D array of the propagated wavefront.
+    """
+    energy_before_propagation = np.sum(np.abs(func) ** 2)
+    # Find F(v) weight function to put in fresnel by transforming input func
+    nu, F = fft_funcs.fourier_transform_1d(func, x)
+
+    # Calculate the transfer function approximation
+    H0 *= np.exp(-1j * (2 * np.pi / lamda) * d)
+    H = H0 * np.exp(1j * np.pi * lamda * d * nu ** 2)
+
+    # Calculate output by inverse transform of the product H(v) * F(v)
+    X, G = fft_funcs.inverse_fourier_transform_1d(H * F, nu)
+
+    energy_after_propagation = np.sum(np.abs(G) ** 2)
+
+    return X, G
+
+def fresnel_approximation_2d(func, x, y, d, lamda=1, H0=1):
 
     X1, Y1 = np.meshgrid(x, y)
     init_energy = np.sum(np.abs(func(X1, Y1)) ** 2)
@@ -37,7 +65,7 @@ def fresnel_approximation(func, x, y, d, lamda=1, H0=1):
     return X, Y, G
 
 ## propagtaion without any approximations
-def real_propagation(func, x, y, L, wl=1):
+def real_propagation_2d(func, x, y, L, wl=1):
     Nx = len(x)
     Ny = len(y)
     dx = x[1] - x[0]
@@ -76,14 +104,105 @@ def real_propagation(func, x, y, L, wl=1):
 
     return XX,YY,E_out
 
+def find_sigma(x, y):
+    # find index of y closest to 1/e^2 of max value
+    max_val = np.max(y)
+    y_closest_idx = fft_funcs.closest(y, max_val/np.e**2)
+    sigma = x[y_closest_idx]
+    return sigma
+
+def analytic_fresnel_approx_of_1d_gaussian(x, d, sigma, lamda):
+    theta_0 = lamda/(np.pi*sigma)
+    new_sigma_squared = sigma**2 + (theta_0*d)**2
+    I = ((sigma**2)/new_sigma_squared) * np.exp(-2*(x**2)/new_sigma_squared) * 65.82362 * d
+    return I
+
+# 1d fresnel diffraction from a gaussian aperture
+def fresnel_approx_of_gaussian_1d(square_width=3e-3, num_samples=2**12, sigma=50e-6):
+        lamda = 532e-9
+        rayleigh_length = np.pi * sigma ** 2 / lamda
+        d = 1 * rayleigh_length
+
+        print(f'Rayleigh length sigma- {np.sqrt(2) * sigma}')
+
+        # Generate Gaussian Aperture
+        x = np.linspace(-square_width / 2, square_width / 2, num_samples)
+        func = lambda X: np.exp(-X**2 / sigma**2)
+
+        X, G = fresnel_approximation_1d(func(x), x, d, lamda)
+
+        # Create a single figure for all subplots
+        plt.figure(figsize=(12, 6))
+
+        # Subplot 1: Gaussian Aperture
+        plt.subplot(1, 2, 1)
+        F = func(X)
+        plt.plot(X, np.abs(F)**2, label='Intensity')
+        plt.xlabel('X')
+        plt.ylabel('Intensity')
+        plt.title('Gaussian Aperture')
+
+        # Subplot 2: Numerical Fresnel Approximation
+        numerical_intensity = np.abs(G)**2
+        analytic_intensity = analytic_fresnel_approx_of_1d_gaussian(X, d, sigma, lamda)
+        plt.subplot(1, 2, 2)
+        plt.plot(X, numerical_intensity, label='Numeric Intensity')
+        plt.plot(X, analytic_intensity, linestyle='--', label='Analytic Intensity')
+        plt.xlabel('X')
+        plt.ylabel('Intensity')
+        plt.title(f'Numerical and Analytic Fresnel Approximation at d = {d}')
+        print(f'energy of analytic propagation - {np.sum(analytic_intensity)}')
+
+        x0 = fft_funcs.closest(X, 0)
+        sigma_of_numeric = find_sigma(X[x0:], numerical_intensity[x0:])
+        print(f'sigma of numeric - {sigma_of_numeric}')
+        sigma_of_analytic = find_sigma(X[x0:], analytic_intensity[x0:])
+        print(f'sigma of analytic - {sigma_of_analytic}')
+
+        # Show all subplots in one figure
+        plt.tight_layout()
+        plt.show()
+
+# fresnel_approx_of_gaussian_1d()
+
+def find_scaling_factor_of_analytic_gaussian():
+    num_of_d = 10
+    lamda = 532e-9
+    square_width = 3e-3
+    num_samples = 2 ** 12
+    sigma = 50e-6
+    rayleigh_length = np.pi * sigma ** 2 / lamda
+    d_array = np.linspace(1, 11, num_of_d) * rayleigh_length
+
+    # Generate Gaussian Aperture
+    x = np.linspace(-square_width / 2, square_width / 2, num_samples)
+    func = np.exp(-x ** 2 / sigma ** 2)
+    relations = []
+    for d in d_array:
+        X, G = fresnel_approximation_1d(func, x, d, lamda)
+        numerical_intensity = np.abs(G) ** 2
+        analytic_intensity = analytic_fresnel_approx_of_1d_gaussian(X, d, sigma, lamda)
+        relation = max(numerical_intensity)/max(analytic_intensity)
+        relations.append(relation)
+    fit = np.polyfit(d_array, relations, 1)
+    p = np.poly1d(fit)
+    plt.figure()
+    plt.scatter(d_array, relations, label='Numerical Max / Analytic Max')
+    plt.plot(d_array, p(d_array), label = f'fit - {fit[0]}x + {fit[1]}')
+    print(f'slope in e units - {fit[0]/(20/3*np.pi**2)}')
+    plt.legend()
+    plt.xlabel('d')
+    plt.ylabel('Numerical Max / Analytic Max')
+    plt.show()
+
+# find_scaling_factor_of_analytic_gaussian()
+
 ## fresnel diffraction from a gaussian aperture
-
-
-def fresnel_approx_of_gaussian(square_width=3e-3, num_samples=1024, sigma=50e-6):
+def fresnel_approx_of_gaussian_2d(square_width=3e-3, num_samples=1024, sigma=50e-6):
 
     lamda = 532e-9
     rayleigh_length = np.pi * sigma ** 2 / lamda
-    d = 5 * rayleigh_length
+    d = 20 * rayleigh_length
 
     print(f'Rayleigh length sigma- {np.sqrt(2) * sigma}')
 
@@ -91,7 +210,7 @@ def fresnel_approx_of_gaussian(square_width=3e-3, num_samples=1024, sigma=50e-6)
     x = np.linspace(-square_width / 2, square_width / 2, num_samples)
     func = lambda X, Y: np.exp(-(X**2 + Y**2) / sigma**2)
 
-    X, Y, G = fresnel_approximation(func, x, x, d, lamda)
+    X, Y, G = fresnel_approximation_2d(func, x, x, d, lamda)
 
     # Create a single figure for all subplots
     plt.figure(figsize=(12, 12))
@@ -117,7 +236,7 @@ def fresnel_approx_of_gaussian(square_width=3e-3, num_samples=1024, sigma=50e-6)
     plt.title(f'Numerical Fresnel Approximation at d = {d}')
 
     # Subplot 3: Analytic Fresnel Approximation
-    analytic_intensity, Nf = analytic_fresnel_approx_of_gaussian(X, Y, d, sigma, lamda)
+    analytic_intensity, Nf = analytic_fresnel_approx_of_2d_gaussian(X, Y, d, sigma, lamda)
     plt.subplot(2, 3, 3)
     plt.imshow(analytic_intensity, extent=[X.min(), X.max(), Y.min(), Y.max()],
                origin='lower', cmap='gray')
@@ -176,7 +295,7 @@ def fresnel_approx_of_gaussian(square_width=3e-3, num_samples=1024, sigma=50e-6)
     plt.show()
 
 
-def analytic_fresnel_approx_of_gaussian(X, Y, d, sigma, lamda):
+def analytic_fresnel_approx_of_2d_gaussian(X, Y, d, sigma, lamda):
     theta_0 = lamda/(np.pi*sigma)
     new_sigma_squared = sigma**2 + (theta_0*d)**2
     # Nf = np.pi*(sigma**2)/(2*lamda*d)
@@ -184,14 +303,7 @@ def analytic_fresnel_approx_of_gaussian(X, Y, d, sigma, lamda):
     I = ((sigma**2)/new_sigma_squared) * np.exp(-2*(X**2+Y**2)/new_sigma_squared)
     return I, Nf
 
-def find_sigma(x, y):
-    # find index of y closest to 1/e^2 of max value
-    max_val = np.max(y)
-    y_closest_idx = fft_funcs.closest(y, max_val/np.e**2)
-    sigma = x[y_closest_idx]
-    return sigma
-
-fresnel_approx_of_gaussian()
+# fresnel_approx_of_gaussian_2d()
 
 
 def propagation_of_rect(square_width=15, num_samples=1000, rect_width = 1):
@@ -203,7 +315,7 @@ def propagation_of_rect(square_width=15, num_samples=1000, rect_width = 1):
     func = lambda X, Y: np.where((np.abs(X) <= rect_width / 2) & (np.abs(Y) <= rect_width / 2), 1, 0)
 
     # Compute Fresnel approximation
-    X, Y, G = fresnel_approximation(func, x, x, d, lamda=lamda)
+    X, Y, G = fresnel_approximation_2d(func, x, x, d, lamda=lamda)
 
     # Create a single figure for all subplots
     plt.figure(figsize=(12, 6))
@@ -259,7 +371,7 @@ def propagate_circ(square_width=3e-3, num_samples=1024, radius = 50e-6):
     plt.title('Initial Plane Wave Intensity')
 
     # Subplot 2: Numerical propagation computed exactly
-    X, Y, G = real_propagation(func, x, x, d, wl=lamda)
+    X, Y, G = real_propagation_2d(func, x, x, d, wl=lamda)
     numerical_exact_intensity = np.abs(G) ** 2
     plt.subplot(2, 2, 2)
     plt.imshow(numerical_exact_intensity, extent=[X.min(), X.max(), Y.min(), Y.max()],
@@ -270,7 +382,7 @@ def propagate_circ(square_width=3e-3, num_samples=1024, radius = 50e-6):
     plt.title(f'Numerical Exact Propagation at d = {d}')
 
     # Subplot 3: Numerical propagation computed using fresnel approximation
-    X1, Y1, H = fresnel_approximation(func, x, x, d, lamda=lamda)
+    X1, Y1, H = fresnel_approximation_2d(func, x, x, d, lamda=lamda)
     numerical_intensity = np.abs(H) ** 2
     plt.subplot(2, 2, 3)
     plt.imshow(numerical_intensity, extent=[X.min(), X.max(), Y.min(), Y.max()],

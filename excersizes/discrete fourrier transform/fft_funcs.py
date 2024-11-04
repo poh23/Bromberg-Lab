@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def fourier_transform_1d(func, x):
+def fourier_transform_1d(f, x):
     """
     Perform a 1D Fourier Transform matching the continuous definition:
     F(ν) = ∫ f(x) exp(i 2π ν x) dx
@@ -18,7 +18,6 @@ def fourier_transform_1d(func, x):
     """
     # Discretize space x
     x0, dx = x[0], x[1] - x[0]
-    f = func(x)
 
     # Perform FFT
     G = fftshift(fft(fftshift(f)))
@@ -56,7 +55,7 @@ def inverse_fourier_transform_1d(func, v):
     # Center the zero frequency component
     f_reconstructed = fftshift(f_reconstructed)
 
-    return x, np.real(f_reconstructed)
+    return x, f_reconstructed
 
 
 ## 2D fourrier transforms

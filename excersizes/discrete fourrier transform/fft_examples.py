@@ -79,30 +79,35 @@ def ft_of_gaussian():
 # ft_of_gaussian()
 
 def ift_of_1d_gaussian():
-    N = 5000
+    N = 4096
     mean = 0
-    sigma = 1
+    sigma = 20e3
+    lamda = 532e-9
+    d = 4.5e-3
 
     # Define the function f(x)
-    nu = np.linspace(-50, 50, N, endpoint=False)
+    nu = np.linspace(-1.5e-3, 1.5e-3, N, endpoint=False)
     g = sigma*np.sqrt(np.pi) * np.exp(-(nu**2)*(sigma**2)*np.pi**2)*np.exp(-1j*2*np.pi*nu*mean)
+    H0 = np.exp(-1j * (2 * np.pi / lamda) * d)
+    H = H0 * np.exp(1j * np.pi * lamda * d * nu ** 2)
 
     dnu = nu[1] - nu[0]
 
-    y, h = fft_funcs.inverse_fourier_transform_1d(g, nu)
-    h_analytic =np.exp(-(y-mean)**2/(sigma**2))
+    y, h = fft_funcs.inverse_fourier_transform_1d(g*H, nu)
+    h_analytic =np.exp(-(y-mean)**2/(sigma**2)) * np.exp(-1j * (2 * np.pi / lamda) * d)
 
     plt.figure(figsize=(12,12))
     plt.subplot(2, 1, 1)
-    plt.plot(nu, np.real(g), label='Numerical Real Part')
+    plt.plot(nu, np.abs(g)**2, label='Numerical Real Part')
     plt.legend()
 
     plt.subplot(2, 1, 2)
-    plt.plot(y, np.real(h), label='Numerical Inverse real part')
-    plt.plot(y, np.real(h_analytic), linestyle='--', label='Analytic Inverse real part')
+    plt.plot(y, np.abs(h)**2, label='Numerical Inverse real part')
+    plt.plot(y, np.abs(h_analytic)**2, linestyle='--', label='Analytic Inverse real part')
     plt.legend()
 
     print(f'energy before 1d IFFT - {np.sum(np.abs(g)**2)}')
+    print(f'energy after multiplication by transfer func - {np.sum(np.abs(g*H) ** 2)}')
     print(f'energy after 1d IFFT - {1/(N*(dnu**2))*np.sum(np.abs(h) ** 2)}')
 
     plt.show()
