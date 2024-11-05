@@ -12,6 +12,7 @@ free_space_impedance = 376.73 # Ohm
 lamda = 532e-9
 k0 = 2 * np.pi / lamda
 k = k0 * refractive_index
+data_save_rate = 200 # Save data every N steps
 
 step_size = 1e-5
 
@@ -28,13 +29,14 @@ def split_step_fourier_transform(L, x, init_envelope):
     for i in range(num_steps):
         # Linear fresnel propagation
         fresnel_propagated_step = fresnel_approximation_1d(curr_envelope, x, half_step_size, lamda)[1]
-        total_energies.append(np.sum(np.abs(fresnel_propagated_step)**2))
         curr_envelope = np.array(fresnel_propagated_step).copy()
+        total_energies.append(np.sum(np.abs(fresnel_propagated_step) ** 2))
         # Non-linear propagation
         non_linear_propagated_step = non_linear_propagation_part(curr_envelope, half_step_size)
         curr_envelope = np.array(non_linear_propagated_step).copy()
 
-        total_envelope.append(curr_envelope)
+        if i % data_save_rate == 0:
+            total_envelope.append(curr_envelope)
 
     return total_envelope, total_energies
 
@@ -54,7 +56,7 @@ def propagate_gaussian():
 
     x = np.linspace(-0.5 * square_width, 0.5 * square_width, N)
     init_envelope = np.exp(-x ** 2 / sigma ** 2)
-    z = np.arange(0, L, step_size)
+    z = np.arange(0, L, step_size*20)
     X, Z = np.meshgrid(x, z)
 
     fig = plt.figure(figsize=(15, 5))
@@ -67,7 +69,7 @@ def propagate_gaussian():
     ax1 = graph_split_step_fourier_transform(ax1, fig, X, Z, Intensity_linear, 'Propagation of Gaussian beam, n2 = 0')
 
     global kerr_coefficient
-    kerr_coefficient = 1e-3 # when kerr_coefficient is larger than 1e-3 there isn't energy conservation
+    kerr_coefficient = 5e-4 # when kerr_coefficient is larger than 1e-3 there isn't energy conservation
     total_envelope = split_step_fourier_transform(L, x, init_envelope)
     Intensity = np.abs(total_envelope) ** 2
     ax2 = graph_split_step_fourier_transform(ax2, fig, X, Z, Intensity, f'Propagation of Gaussian beam, n2 = {kerr_coefficient}')
@@ -93,13 +95,10 @@ def propagate_sech():
     N = 2**10
     square_width = 3e-3
     sigma = 50e-6
-    A1 = np.sqrt(2 * free_space_impedance / ((k * sigma) ** 2 * kerr_coefficient))
-    A0 = 1.21 # np.sqrt(2 * free_space_impedance / ((k*sigma)**2 * kerr_coefficient))
+    A0 = np.sqrt(2 * free_space_impedance * refractive_index / ((k * sigma) ** 2 * kerr_coefficient)) # Refractive index factor is kind of wierd
 
     x = np.linspace(-0.5 * square_width, 0.5 * square_width, N)
     init_envelope = A0 / np.cosh(x / sigma)
-    z = np.arange(0, L, step_size)
-    X, Z = np.meshgrid(x, z)
 
     fig = plt.figure(figsize=(15, 5))
     ax1 = fig.add_subplot(1, 2, 1)
@@ -107,6 +106,8 @@ def propagate_sech():
 
     total_envelope, total_energies = split_step_fourier_transform(L, x, init_envelope)
     Intensity = np.abs(total_envelope)**2
+    z = np.linspace(0, L, len(total_envelope))
+    X, Z = np.meshgrid(x, z)
     ax1 = graph_split_step_fourier_transform(ax1, fig, X, Z, Intensity, f'Propagation of Sech beam, n2 = {kerr_coefficient}')
 
     print(f'Initial energy: {total_energies[0]}')
