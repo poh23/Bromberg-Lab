@@ -17,7 +17,8 @@ def propagate_circ(square_width=3e-3, num_samples=1024, radius = 50e-6):
 
     # Generate spatial grid
     x = np.linspace(-square_width / 2, square_width / 2, num_samples)
-    func = lambda X, Y: np.where((X**2 + Y**2 <= radius**2), 1, 0)
+    X1, Y1 = np.meshgrid(x, x)
+    f = np.where((X1**2 + Y1**2 <= radius**2), 1, 0)
 
     # Create a single figure for all subplots
     fig = plt.figure(figsize=(12, 12))
@@ -28,17 +29,17 @@ def propagate_circ(square_width=3e-3, num_samples=1024, radius = 50e-6):
 
     # Subplot 1: Plane Wave
     plt.subplot(2, 2, 1)
-    X1, Y1 = np.meshgrid(x, x)
-    F = np.abs(func(X1, Y1))**2
+    F = np.abs(f)**2
     ax1 = XY_2d_heatmap(ax1, fig, X1, Y1, F, 'Initial Plane Wave Intensity')
 
     # Subplot 2: Numerical propagation computed exactly
+    func = lambda x, y: np.where((x**2 + y**2 <= radius**2), 1, 0)
     X, Y, G = real_propagation_2d(func, x, x, d, wl=lamda)
     numerical_exact_intensity = np.abs(G) ** 2
     ax2 = XY_2d_heatmap(ax2, fig, X, Y, numerical_exact_intensity, f'Numerical Exact Propagation at d = {d}')
 
     # Subplot 3: Numerical propagation computed using fresnel approximation
-    X1, Y1, H = fresnel_approximation_2d(func, x, x, d, lamda=lamda)
+    X1, Y1, H = fresnel_approximation_2d(f, x, x, d, lamda=lamda)
     numerical_intensity = np.abs(H) ** 2
     ax3 = XY_2d_heatmap(ax3, fig, X1, Y1, numerical_intensity, f'Numerical Fresnel Approximation at d = {d}')
 

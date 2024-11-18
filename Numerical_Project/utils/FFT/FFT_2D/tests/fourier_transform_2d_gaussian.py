@@ -17,10 +17,11 @@ def ft_of_2d_gaussian(square_width=10, num_samples=500, sigma=0.6):
     # The more sigma is smaller than the square width, the difference between the intensities is smaller
     # Generate Gaussian Aperture
     x = np.linspace(-square_width / 2, square_width / 2, num_samples, endpoint=False)
-    func = lambda X, Y: np.exp(-((X-mean_x) ** 2 + Y ** 2) / sigma ** 2) * np.cos(20 * np.pi * X) * np.cos(4 * np.pi * Y)
+    X,Y = np.meshgrid(x, x)
+    f = np.exp(-((X-mean_x) ** 2 + Y ** 2) / sigma ** 2) * np.cos(20 * np.pi * X) * np.cos(4 * np.pi * Y)
 
     # Compute the numerical Fourier transform
-    VX, VY, FFT = fourier_transform_2d(func, x, x)
+    VX, VY, FFT = fourier_transform_2d(f, x, x)
 
     # Create a single figure for all subplots
     fig = plt.figure(figsize=(12, 12))
@@ -33,9 +34,8 @@ def ft_of_2d_gaussian(square_width=10, num_samples=500, sigma=0.6):
 
     # Subplot 1: Gaussian Aperture
     plt.subplot(2, 3, 1)
-    X1, Y1 = np.meshgrid(x, x)
-    F = np.abs(func(X1, Y1)) ** 2
-    ax1 = XY_2d_heatmap(ax1, fig, X1, Y1, F, 'Gaussian Aperture')
+    F = np.abs(f) ** 2
+    ax1 = XY_2d_heatmap(ax1, fig, X, Y, F, 'Gaussian Aperture')
 
     # Subplot 2: Numerical Fourier Transform
     numerical_intensity = np.abs(FFT) ** 2
@@ -67,16 +67,17 @@ def ft_of_2d_gaussian(square_width=10, num_samples=500, sigma=0.6):
 
 
 # Call the function
-# ft_of_2d_gaussian()
+ft_of_2d_gaussian()
 
 def ift_of_2d_gaussian(square_width=20, num_samples=2**9, sigma=1):
     # The more sigma is smaller than the square width, the difference between the intensities is smaller
     # Generate Gaussian Aperture
     x = np.linspace(-square_width / 2, square_width / 2, num_samples, endpoint=False)
-    func = lambda X, Y: np.exp(-(X ** 2 + Y ** 2) / sigma ** 2) * np.cos(4 * np.pi * X) * np.cos(2 * np.pi * Y)
+    X, Y = np.meshgrid(x, x)
+    f = np.exp(-(X ** 2 + Y ** 2) / sigma ** 2) * np.cos(4 * np.pi * X) * np.cos(2 * np.pi * Y)
 
     # Compute the numerical Fourier transform
-    VX, VY, FFT = fourier_transform_2d(func, x, x)
+    VX, VY, FFT = fourier_transform_2d(f, x, x)
 
     vx = VX[0, :]
     vy = VY[:, 0]
@@ -91,9 +92,8 @@ def ift_of_2d_gaussian(square_width=20, num_samples=2**9, sigma=1):
 
     # Subplot 1: Gaussian Aperture
     plt.subplot(1, 3, 1)
-    X1, Y1 = np.meshgrid(x, x)
-    F = np.abs(func(X1, Y1)) ** 2
-    ax1 = XY_2d_heatmap(ax1, fig, X1, Y1, F, 'Gaussian Aperture')
+    F = np.abs(f) ** 2
+    ax1 = XY_2d_heatmap(ax1, fig, X, Y, F, 'Gaussian Aperture')
 
     dx = x[1] - x[0]
     numerical_intensity_normalization = dx ** 4 * num_samples ** 2
@@ -114,4 +114,4 @@ def ift_of_2d_gaussian(square_width=20, num_samples=2**9, sigma=1):
     plt.show()
 
 # Call the function
-ift_of_2d_gaussian()
+# ift_of_2d_gaussian()

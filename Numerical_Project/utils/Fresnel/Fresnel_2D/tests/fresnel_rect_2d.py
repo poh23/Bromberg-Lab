@@ -16,10 +16,11 @@ def propagation_of_rect(square_width=3e-3, num_samples=2**10, rect_width = 50e-6
 
     # Generate spatial grid
     x = np.linspace(-square_width / 2, square_width / 2, num_samples)
-    func = lambda X, Y: np.where((np.abs(X) <= rect_width / 2) & (np.abs(Y) <= rect_width / 2), 1, 0)
+    X1, Y1 = np.meshgrid(x, x)
+    f = np.where((np.abs(X1) <= rect_width / 2) & (np.abs(Y1) <= rect_width / 2), 1, 0)
 
     # Compute Fresnel approximation
-    X, Y, G = fresnel_approximation_2d(func, x, x, d, lamda=lamda)
+    X, Y, G = fresnel_approximation_2d(f, x, x, d, lamda=lamda)
 
     # Create a single figure for all subplots
     fig = plt.figure(figsize=(12, 6))
@@ -27,8 +28,7 @@ def propagation_of_rect(square_width=3e-3, num_samples=2**10, rect_width = 50e-6
     ax2 = fig.add_subplot(1, 2, 2)
 
     # Subplot 1: Plane Wave Intensity
-    X1, Y1 = np.meshgrid(x, x)
-    F = np.abs(func(X1, Y1))**2  # Use absolute value for visualization
+    F = np.abs(f)**2  # Use absolute value for visualization
     ax1 = XY_2d_heatmap(ax1, fig, X1, Y1, F, 'Plane Wave Intensity')
 
     # Subplot 2: Numerical Fresnel Approximation

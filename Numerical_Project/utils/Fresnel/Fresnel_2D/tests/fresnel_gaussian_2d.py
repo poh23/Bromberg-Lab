@@ -28,9 +28,10 @@ def fresnel_approx_of_gaussian_2d(square_width=3e-3, num_samples=1024, sigma=50e
 
     # Generate Gaussian Aperture
     x = np.linspace(-square_width / 2, square_width / 2, num_samples)
-    func = lambda X, Y: np.exp(-(X**2 + Y**2) / sigma**2)
+    X, Y = np.meshgrid(x, x)
+    f = np.exp(-(X**2 + Y**2) / sigma**2)
 
-    X, Y, G = fresnel_approximation_2d(func, x, x, d, lamda)
+    X, Y, G = fresnel_approximation_2d(f, x, x, d, lamda)
 
     # Create a single figure for all subplots
     fig = plt.figure(figsize=(12, 12))
@@ -43,8 +44,7 @@ def fresnel_approx_of_gaussian_2d(square_width=3e-3, num_samples=1024, sigma=50e
 
     # Subplot 1: Gaussian Aperture
     plt.subplot(2, 3, 1)
-    F = func(X, Y)
-    ax1 = XY_2d_heatmap(ax1, fig, X, Y, np.abs(F)**2, 'Gaussian Aperture')
+    ax1 = XY_2d_heatmap(ax1, fig, X, Y, np.abs(f)**2, 'Gaussian Aperture')
 
     # Subplot 2: Numerical Fresnel Approximation
     numerical_intensity = np.abs(G)**2

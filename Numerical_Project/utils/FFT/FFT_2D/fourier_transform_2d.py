@@ -1,7 +1,7 @@
 from scipy.fft import fftfreq, fftshift, fft2
 import numpy as np
 
-def fourier_transform_2d(func, x, y):
+def fourier_transform_2d(f, x, y):
     """
     Calculate the FFT_2D Fourier transform of a given function over a grid defined by x and y,
     approximating the continuous Fourier transform defined with integrals over infinite bounds,
@@ -23,9 +23,6 @@ def fourier_transform_2d(func, x, y):
 
     # Generate a FFT_2D grid of x and y coordinates
     X, Y = np.meshgrid(x, y)
-
-    # Evaluate the function on the FFT_2D grid
-    f = func(X, Y)
 
     # Calculate the FFT_2D FFT_1D of the windowed function
     g = fft2(fftshift(f))

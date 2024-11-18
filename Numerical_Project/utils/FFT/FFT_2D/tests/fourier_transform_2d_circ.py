@@ -13,14 +13,14 @@ from Numerical_Project.utils.closest import closest
 matplotlib.use('TkAgg')
 def ft_and_ift_2d_circ(square_width=10, num_samples=1000, r=0.5):
     x = np.linspace(-square_width / 2, square_width / 2, num_samples, endpoint=False)
-    func = lambda X, Y: np.where(np.sqrt(X**2+Y**2) <= r, 1, 0)
-
     X, Y = np.meshgrid(x, x)
-    f = func(X, Y)
+    f = np.where(np.sqrt(X**2+Y**2) <= r, 1, 0)
+
+
     print(f'Energy before fourier is: {np.sum(np.abs(f) ** 2)}')
 
     # Compute the numerical Fourier transform Windowed and not Windowed
-    VX, VY, FFT = fourier_transform_2d(func, x, x)
+    VX, VY, FFT = fourier_transform_2d(f, x, x)
     print(f'Energy after fourier is: {np.sum(np.abs(FFT) ** 2)}')
 
     plt.figure(figsize=(14,21))

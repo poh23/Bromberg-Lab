@@ -24,7 +24,9 @@ def analytical_fourier_transform_rect(VX, VY, width, height):
 
 def plot_comparison(func, x, y, width=1, height=1):
     # Perform the FFT_2D Fourier transform
-    VX, VY, G = fourier_transform_2d(func, x, y)
+    X, Y = np.meshgrid(x, y)
+    f = func(X, Y)
+    VX, VY, G = fourier_transform_2d(f, x, y)
 
     # Compute the analytical Fourier transform
     analytical_intensity = np.abs(analytical_fourier_transform_rect(VX, VY, width, height))

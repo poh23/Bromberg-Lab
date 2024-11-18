@@ -7,14 +7,13 @@ from Numerical_Project.utils.FFT.FFT_2D.fourier_transform_2d import fourier_tran
 from Numerical_Project.utils.FFT.FFT_2D.inverse_fourier_transform_2d import inverse_fourier_transform_2d
 
 
-def fresnel_approximation_2d(func, x, y, d, lamda=1, H0=1):
+def fresnel_approximation_2d(f, x, y, d, lamda=1, H0=1):
 
-    X1, Y1 = np.meshgrid(x, y)
-    init_energy = np.sum(np.abs(func(X1, Y1)) ** 2)
+    init_energy = np.sum(np.abs(f) ** 2)
     print(f'initial energy - {init_energy}')
 
     # Find F(vx, vy) weight function to put in fresnel by transforming input func
-    VX, VY, F = fourier_transform_2d(func, x, y)
+    VX, VY, F = fourier_transform_2d(f, x, y)
 
     dx = x[1] - x[0]
     numerical_intensity_normalization = dx ** 4 * len(F) ** 2
