@@ -10,14 +10,14 @@ from Numerical_Project.utils.FFT.FFT_2D.inverse_fourier_transform_2d import inve
 def fresnel_approximation_2d(f, x, y, d, lamda=1, H0=1):
 
     init_energy = np.sum(np.abs(f) ** 2)
-    print(f'initial energy - {init_energy}')
+    # print(f'initial energy - {init_energy}')
 
     # Find F(vx, vy) weight function to put in fresnel by transforming input func
     VX, VY, F = fourier_transform_2d(f, x, y)
 
     dx = x[1] - x[0]
     numerical_intensity_normalization = dx ** 4 * len(F) ** 2
-    print(f'energy after FFT - {(np.sum(np.abs(F) ** 2) / numerical_intensity_normalization)}')
+    # print(f'energy after FFT - {(np.sum(np.abs(F) ** 2) / numerical_intensity_normalization)}')
 
     # calculate the transfer function approximation
     H0 *= np.exp(-1j * (2 * np.pi / lamda) * d)
@@ -29,6 +29,6 @@ def fresnel_approximation_2d(f, x, y, d, lamda=1, H0=1):
     X, Y, G = inverse_fourier_transform_2d(H * F, vx, vy)
 
     intensity_after_propagation = np.sum(np.abs(G) ** 2)
-    print(f'energy after propagation - {intensity_after_propagation}')
+    # print(f'energy after propagation - {intensity_after_propagation}')
 
     return X, Y, G

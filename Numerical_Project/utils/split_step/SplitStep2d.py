@@ -1,0 +1,64 @@
+import numpy as np
+import sys
+from Numerical_Project.utils.Fresnel.Fresnel_2D.fresnel_approximation_2d import fresnel_approximation_2d
+
+# setting path
+sys.path.append('../../../')
+class SplitStep2d:
+    def __init__(self, kerr_coefficient, lamda=532e-9):
+        self.lamda = lamda
+        self.kerr_coefficient = kerr_coefficient  # The order of magnitude of the coefficient n2 (in units of cm^2/W) is 10e-l6 to 10e-l4 in glasses, 10e-l4 to 10e-7 in doped glasses, 10e-10 to 10e-8 in organic materials, and 10e-10 to 1o-2 in semiconductors.
+        self.refractive_index = 1.46  # Silica
+        self.free_space_impedance = 376.73  # Ohm
+        self.k0 = 2 * np.pi / lamda
+        self.k = self.k0 * self.refractive_index
+        self.step_size = 1e-6
+        self.data_save_rate = 200  # Save data every N steps
+
+    def non_linear_propagation_part(self, current_envelope):
+        half_step_size = self.step_size / 2.0
+        updated_envelope = current_envelope - 0.5j * half_step_size * self.k * np.abs(
+            current_envelope) ** 2 * current_envelope * self.kerr_coefficient / self.free_space_impedance
+        return updated_envelope
+
+    def propagate(self, L, x, y, init_envelope):
+        num_steps = int(L // self.step_size)
+        half_step_size = self.step_size / 2.0
+        curr_envelope = np.array(init_envelope)
+        total_envelope = [init_envelope]
+        total_energies = [np.sum(np.abs(init_envelope) ** 2)]
+        curr_z = 0
+        z = [0]
+        for i in range(num_steps):
+
+            # Linear fresnel propagation
+            fresnel_propagated_step = fresnel_approximation_2d(curr_envelope, x, y, half_step_size, self.lamda)[2]
+            curr_envelope = np.array(fresnel_propagated_step).copy()
+            total_energies.append(np.sum(np.abs(fresnel_propagated_step) ** 2))
+
+            # Non-linear propagation
+            non_linear_propagated_step = self.non_linear_propagation_part(curr_envelope)
+            curr_envelope = np.array(non_linear_propagated_step).copy()
+
+            curr_z += self.step_size
+
+            if i % self.data_save_rate == 0:
+                print(f'loop {i} of {num_steps}')
+                total_envelope.append(curr_envelope)
+                z.append(curr_z)
+
+        return z, total_envelope, total_energies
+
+    def graph_propagation_slices(self, ax, fig, x, y, z, Intensity, title):
+        X, Y = np.meshgrid(x, y)
+
+        print(f'X shape: {X.shape}')
+
+        c = ax.pcolormesh(X, Y, Intensity, cmap='viridis', shading='auto')
+        fig.colorbar(c, ax=ax)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Z')
+        ax.set_title(title)
+        return ax
+
+
