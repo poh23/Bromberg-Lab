@@ -12,38 +12,41 @@ class SplitStep2d:
         self.free_space_impedance = 376.73  # Ohm
         self.k0 = 2 * np.pi / lamda
         self.k = self.k0 * self.refractive_index
-        self.step_size = 1e-6
+        self.num_steps = 1e-6
         self.data_save_rate = 200  # Save data every N steps
 
-    def non_linear_propagation_part(self, current_envelope):
-        half_step_size = self.step_size / 2.0
+    def non_linear_propagation_part(self, current_envelope, half_step_size):
         updated_envelope = current_envelope - 0.5j * half_step_size * self.k * np.abs(
             current_envelope) ** 2 * current_envelope * self.kerr_coefficient / self.free_space_impedance
         return updated_envelope
 
     def propagate(self, L, x, y, init_envelope):
-        num_steps = int(L // self.step_size)
-        half_step_size = self.step_size / 2.0
+        step_size = L / (self.num_steps-1)
+        half_step_size = step_size / 2.0
         curr_envelope = np.array(init_envelope)
         total_envelope = [init_envelope]
         total_energies = [np.sum(np.abs(init_envelope) ** 2)]
         curr_z = 0
         z = [0]
-        for i in range(num_steps):
+        num_steps_int = int(self.num_steps)
+        for i in range(num_steps_int):
 
             # Linear fresnel propagation
             fresnel_propagated_step = fresnel_approximation_2d(curr_envelope, x, y, half_step_size, self.lamda)[2]
             curr_envelope = np.array(fresnel_propagated_step).copy()
             total_energies.append(np.sum(np.abs(fresnel_propagated_step) ** 2))
 
+            #todo: make x and y smaller, by making square smaller
+            #todo: find geometry of experiment and find the right parameters to use in simulation
+
             # Non-linear propagation
             non_linear_propagated_step = self.non_linear_propagation_part(curr_envelope)
             curr_envelope = np.array(non_linear_propagated_step).copy()
 
-            curr_z += self.step_size
+            curr_z += step_size
 
             if i % self.data_save_rate == 0:
-                print(f'loop {i} of {num_steps}')
+                print(f'loop {i} of {num_steps_int}')
                 total_envelope.append(curr_envelope)
                 z.append(curr_z)
 

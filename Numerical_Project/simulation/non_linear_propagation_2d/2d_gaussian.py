@@ -16,7 +16,7 @@ def non_linear_propagation_of_2d_gaussian():
     sigma = 50e-6
 
     split_step = SplitStep2d(kerr_coefficient=0)
-    split_step.step_size = 1e-5
+    split_step.step_size = L
 
     x = np.linspace(-0.5 * square_width, 0.5 * square_width, N)
     X, Y = np.meshgrid(x, x)

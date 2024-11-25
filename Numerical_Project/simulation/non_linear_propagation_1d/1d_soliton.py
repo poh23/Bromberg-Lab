@@ -1,5 +1,8 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 from Numerical_Project.utils.split_step.SplitStep1d import SplitStep1d
 def propagate_sech():
@@ -34,6 +37,7 @@ def propagate_sech():
     ax2.legend()
 
     plt.show()
+    print('Propagation of Sech beam done')
 
 
 propagate_sech()
