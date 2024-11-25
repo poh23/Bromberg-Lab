@@ -7,7 +7,7 @@ from Numerical_Project.utils.FFT.FFT_1D.fourier_transform_1d import fourier_tran
 from Numerical_Project.utils.FFT.FFT_1D.inverse_fourier_transform_1d import inverse_fourier_transform_1d
 
 
-def fresnel_approximation_1d(func, x, d, lamda=1, H0=1):
+def fresnel_approximation_1d(func, x, d, refractive_index=1, lamda=1, H0=1):
     """
     Perform a Fresnel approximation for FFT_1D propagation of a wavefront.
 
@@ -27,8 +27,8 @@ def fresnel_approximation_1d(func, x, d, lamda=1, H0=1):
     nu, F = fourier_transform_1d(func, x)
 
     # Calculate the transfer function approximation
-    H0 *= np.exp(-1j * (2 * np.pi / lamda) * d)
-    H = H0 * np.exp(1j * np.pi * lamda * d * nu ** 2)
+    H0 *= np.exp(-1j * (2 * np.pi * refractive_index / lamda) * d)
+    H = H0 * np.exp(1j * np.pi * lamda / refractive_index * d * nu ** 2)
 
     # Calculate output by inverse transform of the product H(v) * F(v)
     X, G = inverse_fourier_transform_1d(H * F, nu)

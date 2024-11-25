@@ -7,7 +7,7 @@ from Numerical_Project.utils.FFT.FFT_2D.fourier_transform_2d import fourier_tran
 from Numerical_Project.utils.FFT.FFT_2D.inverse_fourier_transform_2d import inverse_fourier_transform_2d
 
 
-def fresnel_approximation_2d(f, x, y, d, lamda=1, H0=1):
+def fresnel_approximation_2d(f, x, y, d, refractive_index, lamda=1, H0=1):
 
     init_energy = np.sum(np.abs(f) ** 2)
     # print(f'initial energy - {init_energy}')
@@ -20,8 +20,8 @@ def fresnel_approximation_2d(f, x, y, d, lamda=1, H0=1):
     # print(f'energy after FFT - {(np.sum(np.abs(F) ** 2) / numerical_intensity_normalization)}')
 
     # calculate the transfer function approximation
-    H0 *= np.exp(-1j * (2 * np.pi / lamda) * d)
-    H = H0 * np.exp(1j * np.pi * lamda * d * (VX ** 2 + VY ** 2))
+    H0 *= np.exp(-1j * (2 * np.pi * refractive_index / lamda) * d)
+    H = H0 * np.exp(1j * np.pi * lamda/refractive_index * d * (VX ** 2 + VY ** 2))
 
     # calculate output by inverse transform of the product H(vx, vy)*F(vx,vy)
     vx = VX[0, :]

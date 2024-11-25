@@ -12,9 +12,8 @@ def non_linear_propagation_of_gaussian():
     N = 2**10
     square_width = 3e-3
     sigma = 50e-6
-    # we will give N steps and L and step will be L/(Nsteps-1)
     split_step = SplitStep1d(kerr_coefficient=0)
-    split_step.num_steps = 10000
+    split_step.num_steps = 10
 
     x = np.linspace(-0.5 * square_width, 0.5 * square_width, N)
     init_envelope = np.exp(-x ** 2 / sigma ** 2)
@@ -30,7 +29,7 @@ def non_linear_propagation_of_gaussian():
 
     kerr_coefficient = 0 # when kerr_coefficient is larger than 1e-3 there isn't energy conservation
     split_step = SplitStep1d(kerr_coefficient=kerr_coefficient)
-    split_step.num_steps = 1000
+    split_step.num_steps = 50
     z, total_envelope, total_energies = split_step.propagate(L, x, init_envelope)
     Intensity = np.abs(total_envelope) ** 2
     ax2 = split_step.graph_propagation(ax2, fig, x, z, Intensity, f'Propagation of Gaussian beam, n2 = {kerr_coefficient}')
