@@ -1,4 +1,5 @@
-from scipy.fft import fftfreq, fftshift, fft2
+from scipy.fft import fftfreq, fftshift
+from pyfftw.interfaces.scipy_fft import fft2
 import numpy as np
 
 def fourier_transform_2d(f, x, y):

@@ -5,9 +5,9 @@ from Numerical_Project.utils.Fresnel.Fresnel_2D.fresnel_approximation_2d import 
 # setting path
 sys.path.append('../../../')
 class SplitStep2d:
-    def __init__(self, kerr_coefficient, num_steps = 1e5, lamda=532e-9):
+    def __init__(self, kerr_coefficient, num_steps=1e3, lamda=532e-9):
         self.lamda = lamda
-        self.kerr_coefficient = kerr_coefficient  # The order of magnitude of the coefficient n2 (in units of cm^2/W) is 10e-l6 to 10e-l4 in glasses, 10e-l4 to 10e-7 in doped glasses, 10e-10 to 10e-8 in organic materials, and 10e-10 to 1o-2 in semiconductors.
+        self.kerr_coefficient = kerr_coefficient  # The order of magnitude of the coefficient n2 (in units of m^2/W) is 1e-20 to 1e-l8 in glasses, 1e-l8 to 1e-11 in doped glasses, 1e-14 to 1e-12 in organic materials, and 1e-14 to 1e-6 in semiconductors.
         self.refractive_index = 1.46  # Silica
         self.free_space_impedance = 376.73  # Ohm
         self.k0 = 2 * np.pi / lamda
@@ -31,7 +31,7 @@ class SplitStep2d:
         for i in range(num_steps_int):
 
             # Linear fresnel propagation
-            fresnel_propagated_step = fresnel_approximation_2d(curr_envelope, x, y, step_size, self.lamda)[2]
+            fresnel_propagated_step = fresnel_approximation_2d(curr_envelope, x, y, step_size, self.refractive_index, self.lamda)[2]
             curr_envelope = np.array(fresnel_propagated_step).copy()
             total_energies.append(np.sum(np.abs(fresnel_propagated_step) ** 2))
 
