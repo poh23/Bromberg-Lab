@@ -6,12 +6,12 @@ matplotlib.use('TkAgg')
 
 from Numerical_Project.utils.split_step.SplitStep1d import SplitStep1d
 def propagate_sech():
-    kerr_coefficient = 1e-11  # when kerr_coefficient is larger than 1e-3 there isn't energy conservation
+    kerr_coefficient = 1e-3  # when kerr_coefficient is larger than 1e-3 there isn't energy conservation
     split_step = SplitStep1d(kerr_coefficient=kerr_coefficient)
     split_step.num_steps = 1e5
 
     L = 9e-2 # max distance because then the beam is too wide and there are edge effects
-    N = 2**8
+    N = 2**10
     square_width = 3e-3
     sigma = 50e-6
     A0 = np.sqrt(2 * split_step.free_space_impedance / ((split_step.k * sigma) ** 2 * kerr_coefficient))

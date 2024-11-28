@@ -1,5 +1,4 @@
-from scipy.fft import fftshift, ifftshift
-from pyfftw.interfaces.scipy_fft import ifft2
+from scipy.fft import fftshift, ifftshift, ifft2
 import numpy as np
 
 def inverse_fourier_transform_2d(func, vx, vy):

@@ -31,7 +31,7 @@ class SplitStep1d:
         for i in range(num_steps_int):
 
             # Linear fresnel propagation
-            fresnel_propagated_step = fresnel_approximation_1d(curr_envelope, x, step_size, self.refractive_index, self.lamda)[1]
+            fresnel_propagated_step = fresnel_approximation_1d(curr_envelope, x, step_size,self.refractive_index, self.lamda)[1]
             curr_envelope = np.array(fresnel_propagated_step).copy()
             total_energies.append(np.sum(np.abs(fresnel_propagated_step) ** 2))
 
