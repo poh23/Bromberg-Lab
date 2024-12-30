@@ -95,7 +95,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
 
     for file in image_files:
         # Extract the propagation distance from the filename
-        distance = int(''.join(filter(str.isdigit, file.split('.')[0]))) * 25.4  # Convert inches to millimeters
+        distance = int(''.join(filter(str.isdigit, file.split('.')[0]))) * 10  # Convert cm to mm
 
         # Load the image
         image = Image.open(os.path.join(folder_path, file))
@@ -109,6 +109,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
             sigma_x_metric = sigma_x * 4.8  # Convert to micrometers
             sigma_y_metric = sigma_y * 4.8  # Convert to micrometers
             avg_sigma = (np.abs(sigma_x_metric) + np.abs(sigma_y_metric)) / 2
+            print(f"diff = {(np.abs(sigma_x_metric) - np.abs(sigma_y_metric))/np.abs(sigma_x_metric)}")
             distances.append(distance)
             sigmas.append(avg_sigma)
 
@@ -132,7 +133,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
         sigmas = np.array(sigmas, dtype=np.float64)
 
         # Fit the asymptote to calculate divergence
-        far_field_mask = distances > (z0_mm + zR_mm * 1.5)  # Use points far beyond the Rayleigh range
+        far_field_mask = distances > 400 # > (z0_mm + zR_mm * 1.5)  # Use points far beyond the Rayleigh range
         print(f"Far-field mask: {far_field_mask}")  # Debugging
         print(distances[far_field_mask])
         divergence_fit = np.polyfit(distances[far_field_mask], sigmas[far_field_mask] / distances[far_field_mask], 1)
@@ -141,6 +142,8 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
 
         # Calculate beam quality factor M^2
         m_squared = (divergence_rad * np.pi * w0) / wavelength_micrometer
+        theta_0 =  1 / ((np.pi * w0) / wavelength_micrometer)
+        print(f"Thea_0: {theta_0:.2f} rad")
 
         # Create numerical details for the background text
         fit_details = (
@@ -187,7 +190,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
 
 
 # Example usage with a wavelength of 532 nm
-process_folder_and_plot(r"C:\Users\ronen\OneDrive\Desktop\HW Y3 S1\Bromberg\Preliminary Experiments\manual vimba pics", wavelength_nm=532)
+process_folder_and_plot(r"C:\Users\OWNER\Desktop\Eyal and Maya\BeamWidthMeasurements\folder", wavelength_nm=532)
 
 
 
