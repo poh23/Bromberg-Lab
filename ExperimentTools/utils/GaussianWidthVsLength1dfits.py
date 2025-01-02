@@ -85,7 +85,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
         image_data = np.array(image)
 
         # Analyze slices (x=0 and y=0)
-        sigma_x, sigma_y = analyze_slices(image_data, show_fit=True)
+        sigma_x, sigma_y = analyze_slices(image_data, show_fit=False)
 
         if sigma_x is not None and sigma_y is not None:
             # Convert sigma from pixels to micrometers
@@ -102,6 +102,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
     distances = np.array(distances)
 
     wavelength_micrometer = 532 / 1000
+    n = 1
 
     # Fit the beam waist model for both slices
     try:
@@ -112,42 +113,57 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
         popt_y, _ = curve_fit(beam_waist_model, distances, sigmas_y, p0=[min(sigmas_y), np.mean(distances)])
         w0_y, z0_y = popt_y
 
-        print(f"Results for x slice:")
-        print(f"  Beam waist (w0_x): {w0_x:.2f} μm")
-        print(f"  Focal position (z0_x): {z0_x:.2f} mm")
-
-        print(f"Results for y slice:")
-        print(f"  Beam waist (w0_y): {w0_y:.2f} μm")
-        print(f"  Focal position (z0_y): {z0_y:.2f} mm")
-
         # Fit the asymptote to calculate divergence
         far_field_mask = distances > 400  # > (z0_mm + zR_mm * 1.5)  # Use points far beyond the Rayleigh range
         print(f"Far-field mask: {far_field_mask}")  # Debugging
         print(distances[far_field_mask])
-        divergence_fit = np.polyfit(distances[far_field_mask], sigmas_x[far_field_mask] / distances[far_field_mask], 1)
-        divergence_rad = np.abs(divergence_fit[0])  # Ensure divergence is positive
-        divergence_mrad = divergence_rad * 1000  # Convert to milliradians
 
-        # Calculate beam quality factor M^2
-        m_squared = (divergence_rad * np.pi * w0_x) / wavelength_micrometer
-        theta_0 = 1 / ((np.pi * w0_x) / wavelength_micrometer)
-        print(f"Theta_0: {theta_0:.2f} rad")
+        # Calculate divergence and beam quality factor for x slice
+        zR_x = (np.pi * np.square(w0_x) * n / wavelength_micrometer) / 1000  # Rayleigh range in mm
+        divergence_fit_x = np.polyfit(distances[far_field_mask], sigmas_x[far_field_mask] / distances[far_field_mask], 1)
+        divergence_rad_x = np.abs(divergence_fit_x[0])  # Ensure divergence is positive
+        divergence_mrad_x = divergence_rad_x * 1000  # Convert to milliradians
+
+        m_squared_x = (divergence_rad_x * np.pi * w0_x) / wavelength_micrometer
+        theta_0_x = 1 / ((np.pi * w0_x) / wavelength_micrometer)
+        print(f"Theta_0 in x slice: {theta_0_x:.2f} rad")
+
+        # Calculate divergence and beam quality factor for y slice
+        zR_y = (np.pi * np.square(w0_x) * n / wavelength_micrometer) / 1000  # Rayleigh range in mm
+        divergence_fit_y = np.polyfit(distances[far_field_mask], sigmas_y[far_field_mask] / distances[far_field_mask], 1)
+        divergence_rad_y = np.abs(divergence_fit_y[0])  # Ensure divergence is positive
+        divergence_mrad_y = divergence_rad_y * 1000  # Convert to milliradians
+
+        m_squared_y = (divergence_rad_y * np.pi * w0_y) / wavelength_micrometer
+        theta_0_y = 1 / ((np.pi * w0_y) / wavelength_micrometer)
+        print(f"Theta_0 in y slice: {theta_0_y:.2f} rad")
 
         # Create numerical details for the background text
         fit_details = (
-            f"$w_0={w0_x:.2f} \mu m$\n"
-            # f"$z_0={z0_mm:.2f}$ mm\n"
-            # f"$z_R={zR_mm:.2f}$ mm\n"
-            f"$\\theta={divergence_mrad:.2f}$ mrad\n"
-            f"$M^2={m_squared:.2f}$"
+            f"$w_0_x={w0_x:.2f} \mu m$\n"
+            f"$z_0={z0_x:.2f}$ mm\n"
+            f"$z_R={zR_x:.2f}$ mm\n"
+            f"$\\theta_x={divergence_mrad_x:.2f}$ mrad\n"
+            f"$M^2={m_squared_x:.2f}$"
         )
 
-        print(f"Fit parameters:")
-        print(f"  Beam waist (w0): {w0_x:.2f} μm")
-        # print(f"  Focal position (z0): {z0_mm:.2f} mm")
-        # print(f"  Rayleigh range (zR): {zR_mm:.2f} mm")
-        print(f"  Divergence (asymptote): {divergence_mrad:.2f} mrad")
-        print(f"  Beam quality factor (M^2): {m_squared:.2f}")
+        print("Results for x slice:")
+        print(f"| Parameter                | Value       |")
+        print(f"|--------------------------|-------------|")
+        print(f"| Beam waist (w0_x)        | {w0_x:.2f} μm |")
+        print(f"| Focal position (z0_x)    | {z0_x:.2f} mm |")
+        print(f"| Rayleigh range (zR)      | {zR_x:.2f} mm |")
+        print(f"| Divergence (asymptote)   | {divergence_mrad_x:.2f} mrad |")
+        print(f"| Beam quality factor (M^2)| {m_squared_x:.2f} |")
+
+        print("Results for y slice:")
+        print(f"| Parameter                | Value       |")
+        print(f"|--------------------------|-------------|")
+        print(f"| Beam waist (w0_y)        | {w0_y:.2f} μm |")
+        print(f"| Focal position (z0_y)    | {z0_y:.2f} mm |")
+        print(f"| Rayleigh range (zR)      | {zR_y:.2f} mm |")
+        print(f"| Divergence (asymptote)   | {divergence_mrad_y:.2f} mrad |")
+        print(f"| Beam quality factor (M^2)| {m_squared_y:.2f} |")
 
     except RuntimeError:
         print("Beam waist fitting failed.")

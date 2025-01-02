@@ -133,7 +133,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
         sigmas = np.array(sigmas, dtype=np.float64)
 
         # Fit the asymptote to calculate divergence
-        far_field_mask = distances > 400 # > (z0_mm + zR_mm * 1.5)  # Use points far beyond the Rayleigh range
+        far_field_mask = distances > (z0_mm + zR_mm * 1.5)  # Use points far beyond the Rayleigh range
         print(f"Far-field mask: {far_field_mask}")  # Debugging
         print(distances[far_field_mask])
         divergence_fit = np.polyfit(distances[far_field_mask], sigmas[far_field_mask] / distances[far_field_mask], 1)
