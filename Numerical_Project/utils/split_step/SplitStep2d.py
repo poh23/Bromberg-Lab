@@ -5,9 +5,9 @@ from Numerical_Project.utils.Fresnel.Fresnel_2D.fresnel_approximation_2d import 
 # setting path
 sys.path.append('../../../')
 class SplitStep2d:
-    def __init__(self, kerr_coefficient, num_steps = 1e5, lamda=532e-9):
+    def __init__(self, kerr_coefficient, num_steps=1e3, lamda=532e-9):
         self.lamda = lamda
-        self.kerr_coefficient = kerr_coefficient  # The order of magnitude of the coefficient n2 (in units of cm^2/W) is 10e-l6 to 10e-l4 in glasses, 10e-l4 to 10e-7 in doped glasses, 10e-10 to 10e-8 in organic materials, and 10e-10 to 1o-2 in semiconductors.
+        self.kerr_coefficient = kerr_coefficient  # The order of magnitude of the coefficient n2 (in units of m^2/W) is 1e-20 to 1e-l8 in glasses, 1e-l8 to 1e-11 in doped glasses, 1e-14 to 1e-12 in organic materials, and 1e-14 to 1e-6 in semiconductors.
         self.refractive_index = 1.46  # Silica
         self.free_space_impedance = 376.73  # Ohm
         self.k0 = 2 * np.pi / lamda
@@ -18,22 +18,24 @@ class SplitStep2d:
     def non_linear_propagation_part(self, current_envelope, step_size):
         updated_envelope = current_envelope - 0.5j * step_size * self.k * np.abs(
             current_envelope) ** 2 * current_envelope * self.kerr_coefficient / self.free_space_impedance
+        #print(f'small parameter: {np.abs(np.sum(0.5 * step_size * self.k * np.abs(current_envelope) ** 2 * self.kerr_coefficient / self.free_space_impedance))}')
         return updated_envelope
 
     def propagate(self, L, x, y, init_envelope):
         step_size = L / self.num_steps
         curr_envelope = np.array(init_envelope)
         total_envelope = [init_envelope]
-        total_energies = [np.sum(np.abs(init_envelope) ** 2)]
         curr_z = 0
         z = [0]
+        dx = x[1] - x[0]
+        dy = y[1] - y[0]
+        total_energies = [dx * dy * np.sum(np.abs(init_envelope) ** 2)]
         num_steps_int = int(self.num_steps)
         for i in range(num_steps_int):
 
             # Linear fresnel propagation
-            fresnel_propagated_step = fresnel_approximation_2d(curr_envelope, x, y, step_size, self.lamda)[2]
+            fresnel_propagated_step = fresnel_approximation_2d(curr_envelope, x, y, step_size, self.refractive_index, self.lamda)[2]
             curr_envelope = np.array(fresnel_propagated_step).copy()
-            total_energies.append(np.sum(np.abs(fresnel_propagated_step) ** 2))
 
             #todo: make x and y smaller, by making square smaller
             #todo: find geometry of experiment and find the right parameters to use in simulation
@@ -41,6 +43,8 @@ class SplitStep2d:
             # Non-linear propagation
             non_linear_propagated_step = self.non_linear_propagation_part(curr_envelope, step_size)
             curr_envelope = np.array(non_linear_propagated_step).copy()
+
+            total_energies.append(np.sum(dx*dy*np.abs(curr_envelope) ** 2))
 
             curr_z += step_size
 

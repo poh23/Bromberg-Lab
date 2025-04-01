@@ -25,17 +25,16 @@ def fresnel_approx_of_gaussian_1d(square_width=3e-3, num_samples=2 ** 12, sigma=
 
     # Generate Gaussian Aperture
     x = np.linspace(-square_width / 2, square_width / 2, num_samples)
-    func = lambda X: np.exp(-X ** 2 /(2 * sigma ** 2))
+    func = np.exp(-x ** 2 /(2 * sigma ** 2))
 
-    X, G = fresnel_approximation_1d(func(x), x, d, lamda)
+    X, G = fresnel_approximation_1d(func, x, d, lamda=lamda)
 
     # Create a single figure for all subplots
     plt.figure(figsize=(12, 6))
 
     # Subplot 1: Gaussian Aperture
     plt.subplot(1, 2, 1)
-    F = func(X)
-    plt.plot(X, np.abs(F) ** 2, label='Intensity')
+    plt.plot(X, np.abs(func) ** 2, label='Intensity')
     plt.xlabel('X')
     plt.ylabel('Intensity')
     plt.title('Gaussian Aperture')
