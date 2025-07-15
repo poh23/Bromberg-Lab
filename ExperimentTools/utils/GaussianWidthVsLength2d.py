@@ -89,7 +89,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
 
     # Sort image files by propagation distance (assuming filenames encode distance)
     image_files = sorted(
-        [f for f in os.listdir(folder_path) if f.endswith(".tif")],
+        [f for f in os.listdir(folder_path) if f.endswith(".png")],
         key=lambda x: int(''.join(filter(str.isdigit, x.split('.')[0]))),
     )
 
@@ -133,15 +133,15 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
         sigmas = np.array(sigmas, dtype=np.float64)
 
         # Fit the asymptote to calculate divergence
-        far_field_mask = distances > (z0_mm + zR_mm * 1.5)  # Use points far beyond the Rayleigh range
-        print(f"Far-field mask: {far_field_mask}")  # Debugging
-        print(distances[far_field_mask])
-        divergence_fit = np.polyfit(distances[far_field_mask], sigmas[far_field_mask] / distances[far_field_mask], 1)
-        divergence_rad = np.abs(divergence_fit[0])  # Ensure divergence is positive
-        divergence_mrad = divergence_rad * 1000  # Convert to milliradians
+        # far_field_mask = distances > (z0_mm + zR_mm * 1.5)  # Use points far beyond the Rayleigh range
+        # print(f"Far-field mask: {far_field_mask}")  # Debugging
+        # print(distances[far_field_mask])
+        # divergence_fit = np.polyfit(distances[far_field_mask], sigmas[far_field_mask] / distances[far_field_mask], 1)
+        # divergence_rad = np.abs(divergence_fit[0])  # Ensure divergence is positive
+        # divergence_mrad = divergence_rad * 1000  # Convert to milliradians
 
         # Calculate beam quality factor M^2
-        m_squared = (divergence_rad * np.pi * w0) / wavelength_micrometer
+        #m_squared = (divergence_rad * np.pi * w0) / wavelength_micrometer
         theta_0 =  1 / ((np.pi * w0) / wavelength_micrometer)
         print(f"Thea_0: {theta_0:.2f} rad")
 
@@ -150,16 +150,16 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
             f"$w_0={w0:.2f} \mu m$\n"
             f"$z_0={z0_mm:.2f}$ mm\n"
             f"$z_R={zR_mm:.2f}$ mm\n"
-            f"$\\theta={divergence_mrad:.2f}$ mrad\n"
-            f"$M^2={m_squared:.2f}$"
+            #f"$\\theta={divergence_mrad:.2f}$ mrad\n"
+            #f"$M^2={m_squared:.2f}$"
         )
 
         print(f"Fit parameters:")
         print(f"  Beam waist (w0): {w0:.2f} μm")
         print(f"  Focal position (z0): {z0_mm:.2f} mm")
         print(f"  Rayleigh range (zR): {zR_mm:.2f} mm")
-        print(f"  Divergence (asymptote): {divergence_mrad:.2f} mrad")
-        print(f"  Beam quality factor (M^2): {m_squared:.2f}")
+        #print(f"  Divergence (asymptote): {divergence_mrad:.2f} mrad")
+        #print(f"  Beam quality factor (M^2): {m_squared:.2f}")
     except RuntimeError:
         print("Beam waist fitting failed.")
         popt = None
@@ -190,7 +190,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
 
 
 # Example usage with a wavelength of 532 nm
-process_folder_and_plot(r"C:\Users\OWNER\Desktop\Eyal and Maya\BeamWidthMeasurements\folder", wavelength_nm=532)
+process_folder_and_plot(r"./laser_3.99A_pics_of_beam", wavelength_nm=532)
 
 
 
