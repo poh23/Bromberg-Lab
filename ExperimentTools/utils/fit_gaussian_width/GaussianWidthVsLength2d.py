@@ -3,73 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import curve_fit
-
-from PIL import Image
-
-
-# Define a 2D Gaussian function
-def gaussian_2d(coords, x0, y0, sigma_x, sigma_y, amplitude, offset):
-    x, y = coords
-    return (
-        offset + amplitude * np.exp(
-            -(2 * ((x - x0) ** 2) / (sigma_x ** 2) + (2 * (y - y0) ** 2) / (sigma_y ** 2))
-        )
-    ).ravel()
+from gaussian_fit_utils import fit_gaussian
+from matplotlib.offsetbox import AnchoredText
 
 
 # Function to fit a 2D Gaussian to an image and visualize the fit
-def fit_gaussian(image, show_fit=False, filename=None):
-
-    # Generate x and y coordinate grids
-    y, x = np.indices(image.shape)
-
-    # Initial guesses for Gaussian parameters
-    initial_guess = (
-        image.shape[1] // 2,  # x0 (center x)
-        image.shape[0] // 2,  # y0 (center y)
-        image.shape[1] // 2,  # sigma_x (width x)
-        image.shape[0] // 2,  # sigma_y (width y)
-        np.max(image),  # amplitude
-        np.min(image),  # offset
-    )
-
-    # Fit the Gaussian model
-    try:
-        popt, _ = curve_fit(
-            gaussian_2d, (x, y), image.ravel(), p0=initial_guess
-        )
-
-        if show_fit:
-            # Recreate the Gaussian model with the fit parameters
-            fit_image = gaussian_2d((x, y), *popt).reshape(image.shape)
-
-            # Plot the original image and the Gaussian fit
-            plt.figure(figsize=(12, 6))
-
-            # Original image
-            plt.subplot(1, 2, 1)
-            plt.title(f"Original Image - {filename if filename else 'N/A'}")
-            plt.imshow(image, cmap="gray")
-            plt.colorbar(label="Pixel Intensity")
-            plt.xlabel("X Pixels")
-            plt.ylabel("Y Pixels")
-
-            # Gaussian fit
-            plt.subplot(1, 2, 2)
-            plt.title("Gaussian Fit")
-            plt.imshow(fit_image, cmap="gray")
-            plt.colorbar(label="Fitted Intensity")
-            plt.xlabel("X Pixels")
-            plt.ylabel("Y Pixels")
-
-            plt.tight_layout()
-            plt.show()
-
-        return popt
-    except RuntimeError:
-        print(f"Gaussian fitting failed for this image: {filename if filename else 'Unknown'}")
-        return None
-
 
 # Add Gaussian beam waist fitting
 def beam_waist_model(z, w0, z0):
@@ -81,7 +19,6 @@ def beam_waist_model(z, w0, z0):
     return w0 * np.sqrt(1 + ((z * 1000 - z0_micrometer) / zR_micrometer) ** 2)
 
 
-from matplotlib.offsetbox import AnchoredText
 # Update process_folder_and_plot to include fit visualization
 def process_folder_and_plot(folder_path, wavelength_nm=532):
     distances = []
@@ -190,7 +127,7 @@ def process_folder_and_plot(folder_path, wavelength_nm=532):
 
 
 # Example usage with a wavelength of 532 nm
-process_folder_and_plot(r"./laser_3.99A_pics_of_beam", wavelength_nm=532)
+process_folder_and_plot(r"../13.05RayleighRange", wavelength_nm=532)
 
 
 
