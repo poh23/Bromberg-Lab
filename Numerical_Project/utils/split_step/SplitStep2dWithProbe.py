@@ -1,7 +1,6 @@
 import numpy as np
 from Numerical_Project.utils.Fresnel.Fresnel_2D.fresnel_approximation_2d import fresnel_approximation_2d
 from Numerical_Project.utils.split_step.SplitStep2d import SplitStep2d   # wherever you defined it
-from Numerical_Project.utils.heatmap_generator import XY_2d_heatmap
 import matplotlib.pyplot as plt
 
 
@@ -15,7 +14,7 @@ class SplitStep2dWithProbe(SplitStep2d):
         super().__init__(*args, **kwargs)
         self._init_probe = init_probe  # store it for propagate()
         self._probe_lambda = probe_lambda
-        self.theta = 0
+        self.theta = 4*10**-10
 
     def probe_propagation_part(self, pump_envelope, probe_envelope, probe_k0, step_size):
         updated_envelope = probe_envelope - 0.5j * step_size * probe_envelope * probe_k0 * np.abs(
@@ -23,13 +22,7 @@ class SplitStep2dWithProbe(SplitStep2d):
         #print(f'small parameter: {np.abs(np.sum(0.5 * step_size * self.k * np.abs(pump_envelope) ** 2 * self.kerr_coefficient / self.free_space_impedance))}')
         return updated_envelope
 
-    def probe_propagation_part_w_tri_phase(self, pump_envelope, probe_envelope, probe_k0, step_size,Y):
-        updated_envelope = probe_envelope * (1 - 0.5j * step_size * probe_k0 * np.abs(
-            pump_envelope) ** 2 * self.kerr_coefficient / self.free_space_impedance + 1j*probe_k0*np.tan(self.theta) * step_size * Y)
-        #print(f'small parameter: {np.abs(np.sum(0.5 * step_size * self.k * np.abs(pump_envelope) ** 2 * self.kerr_coefficient / self.free_space_impedance))}')
-        return updated_envelope
-
-    def propagate(self, L, x, y, init_envelope, tri_phase=False):
+    def propagate(self, L, x, y, init_envelope):
         """
         Same signature as SplitStep2d.propagate!
 
@@ -49,10 +42,6 @@ class SplitStep2dWithProbe(SplitStep2d):
         if self._init_probe is not None:
             probe = self._init_probe.copy().astype(np.complex128)
 
-        if tri_phase:
-            y1 = y + max(y)
-            X, Y = np.meshgrid(x, y1)  # Create a meshgrid for the coordinates
-
         pump_energy = []
         probe_energy = []
 
@@ -71,11 +60,15 @@ class SplitStep2dWithProbe(SplitStep2d):
             pump_energy.append(np.sum(np.abs(pump) ** 2) * dx * dy)
 
             if probe is not None:
+                # 1) form delta-n from pump
+                # delta_n = self.kerr_coefficient * np.abs(pump) ** 2
+                # if i % self.data_save_rate == 0 or i == int(self.num_steps) - 1:
+                #     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+                #     self.graph_propagation_slices(ax, plt.gcf(), x, y, [i * dz], delta_n, 'Delta n')
+                #     plt.show()
+                X, Y = np.meshgrid(x, y)  # Create a meshgrid for the coordinates
                 # 2) phase‐kick probe
-                if tri_phase:
-                    probe = self.probe_propagation_part_w_tri_phase(pump, probe, probe_k0, dz, Y)
-                else:
-                    probe = self.probe_propagation_part(pump, probe, probe_k0, dz)
+                probe = self.probe_propagation_part(pump, probe, dz, Y)
 
                 # 3) linear Fresnel on probe
                 _, _, probe = fresnel_approximation_2d(

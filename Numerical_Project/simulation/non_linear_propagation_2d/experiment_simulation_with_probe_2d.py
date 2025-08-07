@@ -10,7 +10,6 @@ from PIL import Image
 
 from Numerical_Project.utils.split_step.SplitStep2dWithProbe import SplitStep2dWithProbe
 from Numerical_Project.utils.FFT.FFT_2D.fourier_transform_2d import fourier_transform_2d
-from Numerical_Project.utils.Fresnel.Fresnel_2D.fresnel_approximation_2d import fresnel_approximation_2d
 from Numerical_Project.utils.heatmap_generator import XY_2d_heatmap
 
 free_space_impedance = 376.73 # Ohm
@@ -95,37 +94,25 @@ def get_far_field(ax, fig, lamda, d, final_propogated_enevelope, coords, title, 
 # =============================
 # Core Simulation/Analysis Functions
 # =============================
-def propagation_through_setup(kerr_coefficient, coords, d, L, init_pump_envelope, init_probe_envelope, probe_lambda, save_prop_data_file=None, prev_propagation_file_path=None):
+def propagation_through_setup(kerr_coefficient, coords, d, L, init_pump_envelope, init_probe_envelope, probe_lambda):
     """
     Simulate the propagation of a pump and probe beam through a nonlinear medium and visualize results.
     """
     X, Y = np.meshgrid(coords[0], coords[1])  # Create a meshgrid for the coordinates
     # Visualization: Initial pump and probe
-    fig, axes = plt.subplots(1, 2, figsize=(15, 7))
+    fig, axes = plt.subplots(1, 2, figsize=(15, 15))
     axes = axes.ravel()
-    init_pump_intensity = np.abs(init_pump_envelope) ** 2
-    init_probe_intensity = np.abs(init_probe_envelope) ** 2
-    XY_2d_heatmap(axes[0], fig, X, Y, init_pump_intensity, 'Initial Intensity', cmap='viridis')
-    XY_2d_heatmap(axes[1], fig, X, Y, init_probe_intensity, 'Initial Probe Intensity', cmap='viridis')
+    XY_2d_heatmap(axes[0], fig, X, Y, np.abs(init_pump_envelope), 'Initial Intensity', cmap='viridis')
+    XY_2d_heatmap(axes[1], fig, X, Y, init_probe_envelope, 'Initial Probe Intensity', cmap='viridis')
     plt.show()
 
     # Propagation
     split_step = SplitStep2dWithProbe(kerr_coefficient=kerr_coefficient, num_steps=1e4, init_probe=init_probe_envelope, probe_lambda=probe_lambda)
-    split_step.data_save_rate = 1000  # Save data every 1000 steps
+    post_propogation = split_step.propagate(L, *coords, init_pump_envelope)
+    z = post_propogation['z']
+    final_intensity_pump = (np.abs(post_propogation['pump_final']) ** 2) * 100
+    final_intensity_probe = (np.abs(post_propogation['probe_final']) ** 2) * 100
 
-    if prev_propagation_file_path is not None:
-        data = np.load(prev_propagation_file_path, allow_pickle=True)
-        post_propagation = data["arr_0"].item()
-    
-    else:
-        post_propagation = split_step.propagate(L, *coords, init_pump_envelope)
-        if save_prop_data_file is not None:
-            np.savez(save_prop_data_file, post_propagation)
-        
-
-    final_intensity_pump = np.abs(post_propagation['pump_final']) ** 2
-    final_intensity_probe = np.abs(post_propagation['probe_final']) ** 2
-    
 
     # Visualization: Final pump and probe, and their far-field
     fig, axes = plt.subplots(2, 2, figsize=(15, 15))
@@ -135,34 +122,27 @@ def propagation_through_setup(kerr_coefficient, coords, d, L, init_pump_envelope
 
 
     # update far field axes
-    dx1, dy1, Intensity_after_fourier = get_far_field(axes[2], fig, split_step.lamda, d, post_propagation['pump_final'], coords, f'Intensity of pump after fourier, n2 ={kerr_coefficient}')
+    dx1, dy1, Intensity_after_fourier = get_far_field(axes[2], fig, split_step.lamda, d, post_propogation['pump_final'], coords, f'Intensity of pump after fourier, n2 ={kerr_coefficient}')
 
     # Print energy conservation for pump
     print('energy conservation of pump:')
-    print(f'initial energy before propagation - {post_propagation["pump_energy"][0]}')
-    print(f'final energy {post_propagation["pump_energy"][-1]}')
-    print(f'final energy out of initial energy percentage - {post_propagation["pump_energy"][-1]/post_propagation["pump_energy"][0]*100} %')
+    print(f'initial energy before propagation - {post_propogation["pump_energy"][0]}')
+    print(f'final energy {post_propogation["pump_energy"][-1]}')
+    print(f'final energy out of initial energy percentage - {post_propogation["pump_energy"][-1]/post_propogation["pump_energy"][0]*100} %')
     print(f'energy after fourier - {np.sum(Intensity_after_fourier * dx1 * dy1)}')
-    print(f'energy after fourier out of initial energy percentage - {np.sum(Intensity_after_fourier*dx1*dy1)/post_propagation["pump_energy"][0]*100} %')
+    print(f'energy after fourier out of initial energy percentage - {np.sum(Intensity_after_fourier*dx1*dy1)/post_propogation["pump_energy"][0]*100} %')
 
     # Plot fourier of probe envelope
-    dx2, dy2, probe_intensity_after_fourier = get_far_field(axes[3], fig, probe_lambda, d, post_propagation['probe_final'], coords, f'Intensity of probe after fourier, n2 ={kerr_coefficient}')
+    dx2, dy2, probe_intensity_after_fourier = get_far_field(axes[3], fig, probe_lambda, d, post_propogation['probe_final'], coords, f'Intensity of pump after fourier, n2 ={kerr_coefficient}')
 
     # Print energy conservation for probe
     print('energy conservation of probe:')
-    print(f'initial energy before propagation - {post_propagation["probe_energy"][0]}')
-    print(f'final energy {post_propagation["probe_energy"][-1]}')
-    print(f'final energy out of initial energy percentage - {post_propagation["probe_energy"][-1] / post_propagation["probe_energy"][0] * 100} %')
+    print(f'initial energy before propagation - {post_propogation["probe_energy"][0]}')
+    print(f'final energy {post_propogation["probe_energy"][-1]}')
+    print(f'final energy out of initial energy percentage - {post_propogation["probe_energy"][-1] / post_propogation["probe_energy"][0] * 100} %')
     print(f'energy after fourier - {np.sum(probe_intensity_after_fourier * dx2 * dy2)}')
     print(
-        f'energy after fourier out of initial energy percentage - {np.sum(probe_intensity_after_fourier * dx2 * dy2) / post_propagation["probe_energy"][0] * 100} %')
-    plt.show()
-
-    # create diff graph of probe and pump
-    fig, axes = plt.subplots(1,2, figsize=(15, 7))
-    axes = axes.ravel()
-    XY_2d_heatmap(axes[0], fig, X, Y, np.abs(init_pump_intensity/np.sum(init_pump_intensity) - final_intensity_pump/np.sum(final_intensity_pump)), 'Normalized Intensity diff - Pump', cmap='viridis')
-    XY_2d_heatmap(axes[1], fig, X, Y, np.abs(init_probe_intensity/np.sum(init_probe_intensity) - final_intensity_probe/np.sum(final_intensity_probe)), 'Normalized Intensity diff - Probe', cmap='viridis')
+        f'energy after fourier out of initial energy percentage - {np.sum(probe_intensity_after_fourier * dx2 * dy2) / post_propogation["probe_energy"][0] * 100} %')
     plt.show()
 
 # =============================
@@ -190,4 +170,4 @@ if __name__ == "__main__":
     X, Y = np.meshgrid(x, x)  # Create a meshgrid for the coordinates
     init_probe_envelope = probe_amplitude*np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (sigma_probe ** 2))
 
-    propagation_through_setup(kerr_coefficient, (x, x), d, L, init_pump_envelope, init_probe_envelope, probe_lambda)
+    propagation_through_setup(kerr_coefficient, (x, x), d, init_pump_envelope, init_probe_envelope, probe_lambda)

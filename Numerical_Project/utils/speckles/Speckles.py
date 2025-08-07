@@ -8,7 +8,7 @@ import pyfftw
 from datetime import datetime
 pyfftw.interfaces.cache.enable()
 
-#matplotlib.use('TKAgg')
+matplotlib.use('TKAgg')
 
 
 class Speckles:
@@ -16,7 +16,8 @@ class Speckles:
     MICRON = 1e-6
     THIN_DIFFUSER =1
     THICK_DIFFUSER =2
-    wl = 532e-9 # Wavelength nanometer
+    wl = 808e-9 # Wavelength nanometer
+    sig = 700e-6 # of the Gaussian 700 micron
     L = 20e-3 # 20 mm 
     # L = 10e-3 
     theta = 0.02 # Desired Scattering angle
@@ -29,7 +30,7 @@ class Speckles:
         self.diffuser2_phase = None
         self.slm_phase = None
         self.E_in = None
-        self.is_thick = None
+        self.is_thick: bool = None
         self.thick_diffuser_width = None
         self.Nx = Nx
         self.Ny = Ny
@@ -63,7 +64,7 @@ class Speckles:
     def _get_prop_mat(self,l,rev=False):
         if rev == True:
             return np.exp(-1j * self.k_z * l)
-        return np.exp(+1j * self.k_z * l)
+        return np.exp(+1j *  self.k_z * l)
 
     def _my_fft2(self,E):
         return np.fft.fftshift(pyfftw.interfaces.numpy_fft.fft2(
